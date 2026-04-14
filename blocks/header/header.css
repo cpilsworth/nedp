@@ -47,8 +47,8 @@
       / auto 1fr;
     align-items: center;
     gap: 0;
-    max-width: 1248px;
-    padding: 0 24px;
+    max-width: none;
+    padding: 0 24px 0 90px;
     height: auto;
     min-height: 0;
     overflow: visible;
@@ -233,6 +233,7 @@
     white-space: nowrap;
     align-items: center;
     border-top: 1px solid #eee;
+    padding-left: 70px;
   }
 
   .header.block nav[aria-expanded='true'] .nav-sections {

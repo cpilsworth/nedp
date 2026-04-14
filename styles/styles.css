@@ -39,7 +39,7 @@
   --heading-font-size-xs: 22px;
 
   /* nav height */
-  --nav-height: 138px;
+  --nav-height: 128px;
 }
 
 main .button-container { display: inline; }

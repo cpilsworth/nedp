@@ -168,4 +168,23 @@ export default async function decorate(block) {
   navWrapper.className = 'nav-wrapper';
   navWrapper.append(nav);
   block.append(navWrapper);
+
+  // Desktop: split into two rows — top row (brand+tools) scrolls, bottom row (sections) is sticky
+  if (isDesktop.matches) {
+    const topRow = document.createElement('div');
+    topRow.className = 'nav-top-row';
+    const bottomRow = document.createElement('div');
+    bottomRow.className = 'nav-bottom-row';
+
+    const brand = nav.querySelector('.nav-brand');
+    const tools = nav.querySelector('.nav-tools');
+    const sections = nav.querySelector('.nav-sections');
+
+    if (brand) topRow.append(brand);
+    if (tools) topRow.append(tools);
+    if (sections) bottomRow.append(sections);
+
+    nav.prepend(topRow);
+    nav.append(bottomRow);
+  }
 }

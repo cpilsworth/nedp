@@ -49,14 +49,14 @@
     border-bottom: 1px solid #eee;
   }
 
-  /* Bottom row: secondary nav — sticky */
+  /* Bottom row: secondary nav — sticky, aligned with domain links */
   .header.block .nav-bottom-row {
     position: sticky;
     top: 0;
     z-index: 100;
     display: flex;
     align-items: center;
-    padding: 0 24px 0 160px;
+    padding: 0 24px 0 90px;
     height: 64px;
     background: #fff;
     border-bottom: 1px solid #eee;
@@ -257,6 +257,7 @@
     visibility: visible;
     white-space: nowrap;
     align-items: center;
+    margin-left: 58px; /* align with domain links: logo 38px + gap 20px */
   }
 
   .header.block nav[aria-expanded='true'] .nav-sections {

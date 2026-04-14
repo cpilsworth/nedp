@@ -1,0 +1,189 @@
+/* Content Block — offset image left + text right */
+.content-block {
+  --cb-bg: #fafafa;
+  --cb-text: rgb(73, 79, 80);
+  --cb-heading-color: rgb(23, 37, 46);
+  --cb-link-color: #008533;
+  --cb-shadow: rgba(0, 0, 0, 0.1) 0px 25px 20px -15px;
+}
+
+/* Full-width wrapper override */
+.content-block-wrapper {
+  max-width: 100% !important;
+  padding: 0 !important;
+}
+
+.content-block {
+  max-width: 960px;
+  margin: 0 auto;
+  background: var(--cb-bg);
+  box-shadow: var(--cb-shadow);
+  position: relative;
+  overflow: visible;
+}
+
+/* Row: flex layout */
+.content-block > div {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Image cell */
+.content-block > div > div:first-child {
+  overflow: visible;
+}
+
+.content-block > div > div:first-child picture {
+  display: block;
+  line-height: 0;
+}
+
+.content-block > div > div:first-child img {
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  display: block;
+}
+
+/* Text cell */
+.content-block > div > div:last-child {
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.content-block h3 {
+  font-family: var(--heading-font-family, sans-serif);
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--cb-heading-color);
+  margin: 0 0 16px;
+  line-height: 1.25;
+}
+
+.content-block ul {
+  list-style: disc;
+  padding-left: 20px;
+  margin: 0 0 24px;
+}
+
+.content-block li {
+  color: var(--cb-text);
+  font-size: 16px;
+  line-height: 1.6;
+  margin-bottom: 4px;
+}
+
+/* CTA link — green with arrow */
+.content-block a {
+  color: var(--cb-link-color);
+  font-weight: 700;
+  font-size: 16px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.content-block a:hover {
+  text-decoration: underline;
+  color: var(--cb-link-color);
+}
+
+.content-block a::after {
+  content: "→";
+  font-size: 18px;
+}
+
+/* Button auto-decoration reset */
+main .content-block .button-container {
+  display: inline;
+}
+
+main .content-block a.button:any-link {
+  background: none;
+  border: none;
+  border-radius: 0;
+  color: var(--cb-link-color);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 0;
+  margin: 0;
+  text-align: left;
+  text-decoration: none;
+  white-space: normal;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+main .content-block a.button:any-link:hover {
+  text-decoration: underline;
+  color: var(--cb-link-color);
+}
+
+main .content-block a.button:any-link::after {
+  content: "→";
+  font-size: 18px;
+}
+
+@media (width >= 900px) {
+  .content-block {
+    max-width: 850px;
+    margin: 0 auto;
+  }
+
+  .content-block > div {
+    flex-direction: row;
+    min-height: 460px;
+    align-items: stretch;
+  }
+
+  /* Image cell — offset outside container to left */
+  .content-block > div > div:first-child {
+    flex: 0 0 46%;
+    position: relative;
+    margin-left: -150px;
+    margin-top: -32px;
+    z-index: 1;
+    align-self: flex-start;
+    height: 360px;
+  }
+
+  .content-block > div > div:first-child picture {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+  }
+
+  .content-block > div > div:first-child img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  /* Text cell */
+  .content-block > div > div:last-child {
+    flex: 1;
+    padding: 48px 40px 32px 24px;
+  }
+
+  .content-block h3 {
+    font-size: 28px;
+    margin-bottom: 24px;
+  }
+
+  .content-block li {
+    font-size: 16px;
+    line-height: 1.5;
+    margin-bottom: 6px;
+  }
+
+  .content-block a,
+  main .content-block a.button:any-link {
+    font-size: 18px;
+  }
+}

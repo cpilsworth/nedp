@@ -1,0 +1,128 @@
+/* Overview Cards Block */
+.overview-cards-wrapper {
+  max-width: 100% !important;
+  padding: 0 !important;
+}
+
+.overview-cards {
+  --oc-bg: rgb(242, 249, 245);
+  --oc-card-bg: #fff;
+  --oc-text: rgb(23, 37, 46);
+  --oc-subtitle: #6c757d;
+  --oc-radius: 12px;
+  --oc-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+  --oc-gap: 24px;
+  --oc-green: #00966c;
+
+  background: var(--oc-bg);
+  padding: 80px 24px;
+  text-align: center;
+}
+
+/* Heading row */
+.overview-cards > div:first-child {
+  margin-bottom: 48px;
+}
+
+.overview-cards h2 {
+  font-family: var(--heading-font-family, 'Libre Franklin', sans-serif);
+  font-size: 40px;
+  font-weight: 700;
+  color: var(--oc-text);
+  margin: 0;
+  text-align: center;
+}
+
+/* Card grid container - created by JS */
+.overview-cards .oc-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 225px);
+  gap: var(--oc-gap) 40px;
+  max-width: 800px;
+  margin: 0 auto;
+  justify-content: center;
+}
+
+/* Individual card */
+.overview-cards .oc-card {
+  background: var(--oc-card-bg);
+  border-radius: var(--oc-radius);
+  box-shadow: var(--oc-shadow);
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  transition: box-shadow 0.2s ease;
+  position: relative;
+}
+
+.overview-cards .oc-card:hover {
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.15);
+}
+
+/* Icon blob background */
+.overview-cards .oc-icon-wrap {
+  width: 80px;
+  height: 80px;
+  background: url('/drafts/images/intercept_bg.svg') center/contain no-repeat;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+}
+
+.overview-cards .oc-icon-wrap img {
+  width: 32px;
+  height: 32px;
+}
+
+/* Card title */
+.overview-cards .oc-card h3 {
+  font-family: var(--heading-font-family, 'Libre Franklin', sans-serif);
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--oc-text);
+  margin: 0 0 4px;
+}
+
+/* Card subtitle */
+.overview-cards .oc-card p {
+  font-size: 14px;
+  color: var(--oc-subtitle);
+  margin: 0 0 12px;
+  line-height: 1.4;
+}
+
+/* Arrow icon */
+.overview-cards .oc-arrow {
+  width: 24px;
+  height: 14px;
+  margin-top: auto;
+}
+
+/* Reset button auto-decoration */
+main .overview-cards .button-container { display: none; }
+
+/* Responsive: stack on mobile */
+@media (max-width: 599px) {
+  .overview-cards .oc-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    max-width: 100%;
+  }
+
+  .overview-cards h2 {
+    font-size: 28px;
+  }
+}
+
+@media (min-width: 600px) and (max-width: 899px) {
+  .overview-cards .oc-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    max-width: 700px;
+  }
+}

@@ -10,8 +10,6 @@
  * governing permissions and limitations under the License.
  */
 import { downloadZip } from 'client-zip';
-import { HTML as UI_HTML } from './zip-ui.js';
-import { HTML as PREVIEW_HTML } from './preview-ui.js';
 
 interface Env {
   DA_SC_BASE_URL: string;
@@ -100,26 +98,6 @@ export default {
       const url = new URL(request.url);
       if (url.pathname === '/favicon.ico') {
         return new Response('', { status: 404 });
-      }
-
-      if (url.pathname === '/' || url.pathname === '/ui' || url.pathname === '/index.html') {
-        return new Response(request.method === 'HEAD' ? null : UI_HTML, {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'no-cache',
-          },
-        });
-      }
-
-      if (url.pathname === '/preview' || url.pathname === '/preview/') {
-        return new Response(request.method === 'HEAD' ? null : PREVIEW_HTML, {
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'text/html; charset=utf-8',
-            'Cache-Control': 'no-cache',
-          },
-        });
       }
 
       const segments = url.pathname.replace(/\.zip$/, '').slice(1).split('/');

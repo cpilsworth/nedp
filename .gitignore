@@ -4,6 +4,7 @@ logs/*
 node_modules/*
 da-sc/dist/*
 da-sc/node_modules/*
+da-sc/.wrangler/
 helix-importer-ui
 .DS_Store
 *.bak

@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mobile Preview</title>
+  <style>
+    :root { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: #ececec; min-height: 100vh; color: #1a1a1a; }
+    .topbar { padding: 0.75rem 1rem; background: #fff; border-bottom: 1px solid #ddd; display: flex; gap: 0.5rem; flex-wrap: wrap; align-items: center; position: sticky; top: 0; z-index: 100; }
+    .topbar input[type=text] { flex: 1; min-width: 22rem; padding: 0.4rem 0.6rem; border: 1px solid #ccc; border-radius: 4px; font: inherit; font-size: 0.9rem; }
+    .topbar button, .topbar select { padding: 0.4rem 0.8rem; border: 1px solid #999; background: #fff; border-radius: 4px; cursor: pointer; font: inherit; font-size: 0.85rem; }
+    .topbar button:hover { background: #f4f4f4; }
+    .topbar button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .topbar .status { font-size: 0.8rem; color: #666; padding: 0 0.5rem; }
+    .topbar .status.err { color: #c62828; }
+    .topbar .status.warn { color: #ef6c00; }
+    .topbar .status.ok { color: #2e7d32; }
+    .meta { padding: 0.5rem 1rem; font-size: 0.8rem; color: #666; background: #f8f8f8; border-bottom: 1px solid #eee; }
+    .stage { display: flex; justify-content: center; align-items: flex-start; padding: 2rem 1rem; gap: 2rem; flex-wrap: wrap; }
+    .json-panel { width: 380px; max-width: 100%; max-height: 780px; overflow: auto; background: #fff; border-radius: 12px; padding: 1rem; box-shadow: 0 4px 12px rgba(0,0,0,0.06); flex-shrink: 0; }
+    .json-panel h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+    .json-panel pre { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.7rem; background: #f8f8f8; padding: 0.6rem; border-radius: 6px; overflow: auto; margin: 0; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <div class="topbar">
+    <input type="text" id="path" value="/preview/cpilsworth/nedp/digi2/manifest" placeholder="/tier/org/site/path/to/manifest">
+    <button id="fetch" type="button">Fetch</button>
+    <button id="update" type="button">Check for Updates</button>
+    <button id="clear" type="button">Clear</button>
+    <select id="screen" hidden></select>
+    <span id="status" class="status">Ready.</span>
+  </div>
+  <div id="meta" class="meta" hidden></div>
+  <div class="stage">
+    <mobile-app-preview id="preview"></mobile-app-preview>
+    <div class="json-panel" id="json" hidden>
+      <h3>Source JSON</h3>
+      <pre id="jsonBody"></pre>
+    </div>
+  </div>
+
+  <script type="module">
+    import './components/mobile-app-preview.js';
+
+    const $ = (id) => document.getElementById(id);
+    const pathInput = $('path');
+    const fetchBtn = $('fetch');
+    const updateBtn = $('update');
+    const clearBtn = $('clear');
+    const screenSel = $('screen');
+    const statusEl = $('status');
+    const metaEl = $('meta');
+    const preview = $('preview');
+    const jsonPanel = $('json');
+    const jsonBody = $('jsonBody');
+
+    function setStatus(text, kind = '') {
+      statusEl.textContent = text;
+      statusEl.className = 'status' + (kind ? ' ' + kind : '');
+    }
+
+    function setMeta() {
+      const m = preview.bundle?.getMeta();
+      if (!m) { metaEl.hidden = true; metaEl.textContent = ''; return; }
+      metaEl.hidden = false;
+      const fetched = m.fetchedAt ? new Date(m.fetchedAt).toLocaleString() : 'unknown';
+      metaEl.textContent = `${m.fileCount} file(s) · Last-Modified: ${m.lastModified ?? 'n/a'} · Fetched: ${fetched}`;
+    }
+
+    function syncFromComponent() {
+      const screens = preview.screens;
+      const active = preview.currentScreenPath;
+      if (screens.length) {
+        screenSel.hidden = false;
+        screenSel.replaceChildren(...screens.map((s) => {
+          const opt = document.createElement('option');
+          opt.value = s.path ?? '';
+          opt.textContent = (s.id ?? s.path ?? '').split('/').pop();
+          if (s.path === active) opt.selected = true;
+          return opt;
+        }));
+      } else {
+        screenSel.hidden = true;
+        screenSel.replaceChildren();
+      }
+      const screen = preview.currentScreen;
+      if (screen) {
+        jsonPanel.hidden = false;
+        jsonBody.textContent = JSON.stringify(screen, null, 2);
+      } else {
+        jsonPanel.hidden = true;
+        jsonBody.textContent = '';
+      }
+      setMeta();
+      const has = !!preview.bundle?.getMeta();
+      if (!has) setStatus('No data — press Fetch.', 'warn');
+      else if (!preview.manifest) setStatus('Bundle loaded but no manifest detected.', 'warn');
+      else if (!screen) setStatus('Manifest loaded — pick a screen.', '');
+      else setStatus(`Showing ${active} · ${screens.length} screen(s)`, 'ok');
+    }
+
+    function bindBundleErrors() {
+      preview.bundle?.addEventListener('error', (e) => {
+        const msg = e.detail?.error?.message ?? 'unknown';
+        setStatus('Error: ' + msg, 'err');
+      });
+    }
+
+    preview.addEventListener('bundle-change', syncFromComponent);
+    screenSel.addEventListener('change', () => preview.selectScreen(screenSel.value));
+
+    function applyPath() {
+      const p = pathInput.value.trim();
+      if (preview.getAttribute('path') !== p) preview.setAttribute('path', p);
+      bindBundleErrors();
+    }
+
+    fetchBtn.addEventListener('click', async () => {
+      applyPath();
+      setStatus('Fetching…');
+      try {
+        await preview.bundle.fetch();
+        setStatus('Loaded.', 'ok');
+      } catch { /* error event already handled */ }
+    });
+
+    updateBtn.addEventListener('click', async () => {
+      applyPath();
+      const bundle = preview.bundle;
+      if (!bundle?.getMeta()) {
+        setStatus('No stored data — use Fetch first.', 'warn');
+        return;
+      }
+      setStatus('Checking for updates…');
+      try {
+        const updated = await bundle.refresh();
+        setStatus(updated ? 'Updated.' : 'No updates.', 'ok');
+      } catch { /* error event */ }
+    });
+
+    clearBtn.addEventListener('click', () => {
+      applyPath();
+      preview.bundle?.clear();
+      setStatus('Cleared.');
+    });
+
+    pathInput.addEventListener('change', applyPath);
+    pathInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); fetchBtn.click(); }
+    });
+
+    applyPath();
+    syncFromComponent();
+  </script>
+</body>
+</html>

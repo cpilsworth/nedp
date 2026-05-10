@@ -1,2 +1,4 @@
 helix-importer-ui
 *.min.js
+da-sc/dist
+da-sc/node_modules

@@ -245,17 +245,6 @@ describe('da-sc-zip worker', () => {
   });
 
   describe('routing', () => {
-    it('serves the UI HTML at /', async () => {
-      const request = new Request<unknown, IncomingRequestCfProperties>('http://example.com/');
-      const ctx = createExecutionContext();
-      const response = await worker.fetch(request, ENV, ctx);
-      await waitOnExecutionContext(ctx);
-      expect(response.status).toBe(200);
-      expect(response.headers.get('Content-Type')).toBe('text/html; charset=utf-8');
-      const body = await response.text();
-      expect(body).toContain('Manifest Bundle Viewer');
-    });
-
     it('returns 400 for paths missing required segments', async () => {
       const request = new Request<unknown, IncomingRequestCfProperties>('http://example.com/preview/org');
       const ctx = createExecutionContext();

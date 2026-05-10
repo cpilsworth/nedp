@@ -1,0 +1,58 @@
+
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/schemas/content-manifest.schema.json",
+  "title": "Content Manifest",
+  "type": "object",
+  "required": [
+    "screens"
+  ],
+  "properties": {
+    "screens": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/screen"
+      }
+    }
+  },
+  "$defs": {
+    "screen": {
+      "type": "object",
+      "required": [
+        "id",
+        "path"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "Screen ID",
+          "description": "Unique identifier for the screen (e.g. 'home', 'invest')"
+        },
+        "path": {
+          "type": "string",
+          "title": "Screen Path",
+          "description": "URL or path to fetch the screen document"
+        },
+        "lastModified": {
+          "type": "string",
+          "title": "Last Modified (Optional)",
+          "format": "date-time",
+          "description": "Optional last modification timestamp of the screen"
+        },
+        "contentType": {
+          "type": "string",
+          "title": "Content Type (Optional)",
+          "description": "Optional MIME type (e.g. application/json)"
+        },
+        "size": {
+          "type": "integer",
+          "title": "Size (Optional)",
+          "minimum": 0,
+          "description": "Optional size of the document in bytes"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

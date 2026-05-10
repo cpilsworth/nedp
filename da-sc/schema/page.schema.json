@@ -1,0 +1,146 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/page.schema.json",
+  "title": "Mobile Page",
+  "type": "object",
+  "required": [
+    "pageId",
+    "title",
+    "version",
+    "sections"
+  ],
+  "properties": {
+    "pageId": {
+      "type": "string"
+    },
+    "title": {
+      "type": "string"
+    },
+    "theme": {
+      "type": "string",
+      "enum": [
+        "light",
+        "dark"
+      ]
+    },
+    "version": {
+      "type": "number"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "sectionId",
+          "type",
+          "layout",
+          "items"
+        ],
+        "properties": {
+          "sectionId": {
+            "type": "string",
+            "title": "Section ID"
+          },
+          "type": {
+            "type": "string",
+            "title": "Section Type",
+            "enum": [
+              "hero",
+              "list",
+              "cardList",
+              "promo",
+              "disclaimer"
+            ]
+          },
+          "title": {
+            "type": "string",
+            "title": "Section Title"
+          },
+          "subtitle": {
+            "type": "string",
+            "title": "Section Subtitle"
+          },          
+          "items": {
+            "type": "array",
+            "title": "Section Items",
+            "items": {
+              "type": "object",
+              "required": [
+                "itemId",
+                "type"
+              ],
+              "properties": {
+                "itemId": {
+                  "type": "string",
+                  "title": "Item ID"
+
+                },
+                "type": {
+                  "type": "string",
+                  "title": "Item Type",
+                  "enum": [
+                    "action",
+                    "info",
+                    "navigation",
+                    "promo"
+                  ]
+                },
+                "title": {
+                  "type": "string",
+                  "title": "Item Title"
+                },
+                "description": {
+                  "type": "string",
+                  "title": "Item Description"
+                },
+                "icon": {
+                  "type": "string",
+                  "title": "Item Icon"
+                },
+                "ctaLabel": {
+                  "type": "string"
+                },
+                "ctaAction": {
+                  "type": "object",
+                  "required": [
+                    "type",
+                    "value"
+                  ],
+                  "properties": {
+                    "type": {
+                      "type": "string",
+                      "title": "CTA Action Type",
+                      "enum": [
+                        "deeplink",
+                        "api",
+                        "external"
+                      ]
+                    },
+                    
+                    "value": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false
+                },
+                "meta": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": [
+                      "string",
+                      "number",
+                      "boolean"
+                    ]
+                  }
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

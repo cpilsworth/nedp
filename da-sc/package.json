@@ -1,0 +1,25 @@
+{
+  "name": "da-sc-zip",
+  "version": "1.0.0",
+  "description": "Cloudflare Worker that bundles DA manifest screens into a zip archive.",
+  "main": "src/zip-worker.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "build": "wrangler build",
+    "deploy": "wrangler deploy -e production",
+    "deploy:ci": "wrangler deploy -e ci",
+    "test": "vitest run",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "client-zip": "^2.5.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vitest-pool-workers": "^0.8.53",
+    "@cloudflare/workers-types": "^4.20250508.0",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4",
+    "wrangler": "^4.24.4"
+  }
+}

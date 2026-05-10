@@ -1,0 +1,23 @@
+name = "da-sc-zip"
+main = "src/zip-worker.ts"
+compatibility_date = "2025-07-10"
+compatibility_flags = ["global_fetch_strictly_public"]
+workers_dev = true
+
+[vars]
+DA_SC_BASE_URL = "https://da-sc.cpilsworth.workers.dev"
+ENVIRONMENT = "dev"
+
+# CI environment
+[env.ci]
+name = "da-sc-zip-ci"
+[env.ci.vars]
+DA_SC_BASE_URL = "https://da-sc.cpilsworth.workers.dev"
+ENVIRONMENT = "ci"
+
+# Production environment
+[env.production]
+name = "da-sc-zip"
+[env.production.vars]
+DA_SC_BASE_URL = "https://da-sc.cpilsworth.workers.dev"
+ENVIRONMENT = "production"

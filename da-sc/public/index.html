@@ -26,7 +26,11 @@
 </head>
 <body>
   <div class="topbar">
-    <input type="text" id="path" value="/preview/cpilsworth/nedp/digi2/manifest" placeholder="/tier/org/site/path/to/manifest">
+    <select id="env" title="Content environment (tier segment of the path)">
+      <option value="preview">preview</option>
+      <option value="live" selected>live</option>
+    </select>
+    <input type="text" id="path" value="/live/cpilsworth/nedp/digi2/manifest" placeholder="/tier/org/site/path/to/manifest">
     <button id="fetch" type="button">Fetch</button>
     <button id="update" type="button">Check for Updates</button>
     <button id="clear" type="button">Clear</button>
@@ -46,6 +50,7 @@
     import './components/mobile-app-preview.js';
 
     const $ = (id) => document.getElementById(id);
+    const envSel = $('env');
     const pathInput = $('path');
     const fetchBtn = $('fetch');
     const updateBtn = $('update');
@@ -56,6 +61,22 @@
     const preview = $('preview');
     const jsonPanel = $('json');
     const jsonBody = $('jsonBody');
+
+    const TIERS = new Set(['preview', 'live']);
+
+    // The tier is the first path segment of the manifest URL we send to the worker:
+    //   /<tier>/<org>/<site>/<...>/manifest
+    // Switching the env rewrites that segment; reading the path back keeps the
+    // env select in sync if the user edits the URL by hand.
+    function tierFromPath(p) {
+      const m = p.match(/^\/(preview|live)\b/);
+      return m ? m[1] : null;
+    }
+    function pathWithTier(p, tier) {
+      if (!p) return `/${tier}/`;
+      if (tierFromPath(p)) return p.replace(/^\/(preview|live)\b/, `/${tier}`);
+      return `/${tier}${p.startsWith('/') ? '' : '/'}${p}`;
+    }
 
     function setStatus(text, kind = '') {
       statusEl.textContent = text;
@@ -114,9 +135,30 @@
 
     function applyPath() {
       const p = pathInput.value.trim();
+      // Keep env select in sync with whatever tier is in the path.
+      const t = tierFromPath(p);
+      if (t && envSel.value !== t) envSel.value = t;
       if (preview.getAttribute('path') !== p) preview.setAttribute('path', p);
       bindBundleErrors();
     }
+
+    // Switching environment is a hard cache-invalidating action: the content is
+    // coming from a different upstream, so we drop both the old and new entries
+    // before refetching to avoid showing stale data from either tier.
+    envSel.addEventListener('change', async () => {
+      const oldPath = pathInput.value.trim();
+      const newPath = pathWithTier(oldPath, envSel.value);
+      pathInput.value = newPath;
+      preview.bundle?.clear();
+      preview.setAttribute('path', newPath);
+      preview.bundle?.clear();
+      bindBundleErrors();
+      setStatus(`Switched to ${envSel.value} — fetching…`);
+      try {
+        await preview.bundle.fetch();
+        setStatus(`Loaded from ${envSel.value}.`, 'ok');
+      } catch { /* error event */ }
+    });
 
     fetchBtn.addEventListener('click', async () => {
       applyPath();

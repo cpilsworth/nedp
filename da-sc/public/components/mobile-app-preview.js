@@ -43,7 +43,7 @@ const STYLES = `
   .empty { padding: 4rem 1rem; text-align: center; color: #888; }
 
   .phone { width: 380px; height: 780px; background: #1a1a1a; border-radius: 50px; padding: 10px; box-shadow: 0 30px 60px -10px rgba(0,0,0,0.35), 0 0 0 2px #2a2a2a inset; position: relative; }
-  .phone-screen { width: 100%; height: 100%; background: linear-gradient(#176e3a 0 55%, #fff 55% 100%); border-radius: 42px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
+  .phone-screen { width: 100%; height: 100%; background: #176e3a; border-radius: 42px; overflow: hidden; position: relative; display: flex; flex-direction: column; }
   .notch { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); width: 110px; height: 28px; background: #0a0a0a; border-radius: 18px; z-index: 10; }
   .home-bar { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); width: 120px; height: 4px; background: rgba(0,0,0,0.35); border-radius: 2px; z-index: 10; }
 
@@ -61,6 +61,7 @@ const STYLES = `
   .app-header .icons { display: flex; gap: 1rem; }
   .app-header .icons .ico { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
   .app-header h1 { font-size: 1.6rem; font-weight: 700; margin: 0.5rem 0 0.75rem; }
+  .section-h1 { color: #fff; font-size: 1.6rem; font-weight: 700; margin: 0.25rem 1.25rem 0.75rem; }
 
   .green-card { background: rgba(255,255,255,0.08); border-radius: 8px; padding: 0.6rem 0.85rem; margin: 0 1rem 0.4rem; color: #fff; display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
   .green-card:hover { background: rgba(255,255,255,0.14); }
@@ -100,17 +101,27 @@ const STYLES = `
 
 const SIGNAL_SVG = html`<svg viewBox="0 0 16 11" fill="currentColor"><path d="M0 8h2v3H0zM4 5h2v6H4zM8 2h2v9H8zM12 0h2v11h-2z"></path></svg>`;
 
-const KNOWN_KEYS = new Set([
-  'accounts', 'cards', 'promos', 'banners', 'offers',
-  'widgets', 'shortcuts', 'actions', 'tiles',
-  'featured', 'highlight', 'title', 'userName', 'user', 'greeting',
-]);
+// Icon name → emoji, used for cardList grid tiles. Falls back to ✦.
+const ICON_EMOJI = {
+  account: '💼',
+  rewards: '🎁',
+  offers: '🌿',
+  applications: '📋',
+  insure: '☂️',
+  'discs-fines': '🚗',
+  shop: '🛒',
+  shapid: '✦',
+  latest: '🎁',
+  'quick-pay': '💸',
+  'pay-me': '💰',
+  atm: '🏧',
+  'home-loans': '🏠',
+  statements: '📄',
+};
 
-function pickArray(data, keys) {
-  if (!data || typeof data !== 'object') return [];
-  const key = keys.find((k) => Array.isArray(data[k]) && data[k].length);
-  if (!key) return [];
-  return data[key].map((item) => (typeof item === 'object' && item ? item : { name: String(item) }));
+function iconFor(name) {
+  if (!name) return '✦';
+  return ICON_EMOJI[name] ?? '✦';
 }
 
 function tabIcon(id) {
@@ -120,6 +131,8 @@ function tabIcon(id) {
   if (s.includes('account')) return '☰';
   if (s.includes('transact') || s.includes('pay')) return '+';
   if (s.includes('recip') || s.includes('contact')) return '◔';
+  if (s.includes('invest')) return '◇';
+  if (s.includes('trade')) return '◈';
   return '○';
 }
 
@@ -145,31 +158,102 @@ function StatusBar() {
     </div>`;
 }
 
-function formatValue(v) {
-  if (v == null) return '';
-  if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') return String(v);
-  return html`<pre class="raw-json">${JSON.stringify(v, null, 2)}</pre>`;
+// Partition sections by their natural zone:
+//   green (top)   — hero, list, multi-item promo (carousel)
+//   white (body)  — cardList, single-item promo (featured), disclaimer
+function partitionSections(sections) {
+  const green = [];
+  const white = [];
+  sections.forEach((s) => {
+    const itemCount = s.items?.length ?? 0;
+    if (s.type === 'hero' || s.type === 'list') green.push(s);
+    else if (s.type === 'promo' && itemCount > 1) green.push(s);
+    else white.push(s);
+  });
+  return { green, white };
 }
 
-function ScreenContent({ json }) {
-  if (!json) return html`<div class="empty">No screen data.</div>`;
-  const data = json.data ?? json;
-  const meta = json.metadata ?? {};
-  const title = data?.title ?? meta?.title ?? meta?.schemaName ?? 'Screen';
-  const userName = data?.userName ?? data?.user ?? data?.greeting ?? 'Mr JOHN SMITH';
-  const accounts = pickArray(data, ['accounts', 'cards']);
-  const promos = pickArray(data, ['promos', 'banners', 'offers']);
-  const widgets = pickArray(data, ['widgets', 'shortcuts', 'actions', 'tiles']);
-  const featured = data?.featured ?? data?.highlight ?? null;
-  const extra = (data && typeof data === 'object' && !Array.isArray(data))
-    ? Object.entries(data).filter(([k, v]) => (
-      !KNOWN_KEYS.has(k) && v != null && (typeof v !== 'object' || Object.keys(v).length)
-    ))
-    : [];
-  const empty = !accounts.length && !promos.length && !widgets.length && !featured && !extra.length;
-
+function ListSection({ section }) {
   return html`
-    <${StatusBar} />
+    ${section.title ? html`<h1 class="section-h1">${section.title}</h1>` : null}
+    ${(section.items ?? []).map((it) => html`
+      <div class="green-card">
+        <div>
+          <div class="label">${it.title ?? ''}</div>
+          ${it.description ? html`<div class="value">${it.description}</div>` : null}
+        </div>
+        <div class="chev">›</div>
+      </div>`)}`;
+}
+
+function GreenPromoSection({ section }) {
+  return html`
+    ${(section.items ?? []).map((it) => html`
+      <div class="green-card">
+        <div>
+          ${it.description ? html`<div class="label">${it.description}</div>` : null}
+          <div class="value">${it.title ?? ''}</div>
+        </div>
+        ${it.ctaLabel ? html`<div class="cta">${it.ctaLabel}</div>` : html`<div class="chev">›</div>`}
+      </div>`)}`;
+}
+
+function FeaturedPromoSection({ section }) {
+  return (section.items ?? []).map((it) => html`
+    <div class="featured">
+      <div class="badge">${iconFor(it.icon)}</div>
+      <div class="text">
+        <div class="lead">${it.description ?? section.title ?? 'Featured'}</div>
+        <div class="body">${it.title ?? ''}</div>
+      </div>
+    </div>`);
+}
+
+function CardListSection({ section }) {
+  return html`
+    ${section.title ? html`<div class="section-title">${section.title}</div>` : null}
+    <div class="widgets">
+      ${(section.items ?? []).map((it) => html`
+        <div class="widget">
+          <div class="ico">${iconFor(it.icon)}</div>
+          <div class="name">${it.title ?? it.description ?? ''}</div>
+        </div>`)}
+    </div>`;
+}
+
+function HeroSection({ section }) {
+  return html`
+    <div class="app-header" style="padding-bottom:0">
+      ${section.title ? html`<h1>${section.title}</h1>` : null}
+      ${section.subtitle ? html`<div class="label">${section.subtitle}</div>` : null}
+    </div>`;
+}
+
+function DisclaimerSection({ section }) {
+  return html`
+    <div class="kv-card">
+      <div class="k">${section.title ?? 'Disclaimer'}</div>
+      ${(section.items ?? []).map((it) => html`
+        <div class="v">${it.title ?? it.description ?? ''}</div>`)}
+    </div>`;
+}
+
+function GreenSection({ section }) {
+  if (section.type === 'hero') return html`<${HeroSection} section=${section} />`;
+  if (section.type === 'list') return html`<${ListSection} section=${section} />`;
+  if (section.type === 'promo') return html`<${GreenPromoSection} section=${section} />`;
+  return null;
+}
+
+function WhiteSection({ section }) {
+  if (section.type === 'cardList') return html`<${CardListSection} section=${section} />`;
+  if (section.type === 'promo') return html`<${FeaturedPromoSection} section=${section} />`;
+  if (section.type === 'disclaimer') return html`<${DisclaimerSection} section=${section} />`;
+  return null;
+}
+
+function Header({ userName }) {
+  return html`
     <div class="app-header">
       <div class="row">
         <div class="user">
@@ -181,57 +265,47 @@ function ScreenContent({ json }) {
           <div class="ico">💬</div>
         </div>
       </div>
-      <h1>${title}</h1>
-    </div>
-    ${accounts.map((a) => html`
-      <div class="green-card">
-        <div>
-          <div class="label">${a.label ?? a.type ?? a.subtitle ?? 'Account'}</div>
-          <div class="value">${a.name ?? a.title ?? a.balance ?? ''}</div>
-        </div>
-        <div class="chev">›</div>
-      </div>`)}
-    ${promos.map((p) => html`
-      <div class="green-card">
-        <div>
-          <div class="label">${p.label ?? p.eyebrow ?? p.kicker ?? ''}</div>
-          <div class="value">${p.title ?? p.name ?? ''}</div>
-        </div>
-        <div class="cta">${p.cta ?? p.action ?? 'Apply'}</div>
-      </div>`)}
-    ${(accounts.length || promos.length) ? html`
-      <div class="dots">
-        <span class="arrow">‹</span>
-        ${Array.from({ length: 7 }).map((_, i) => html`<span class="dot ${i === 1 ? 'active' : ''}"></span>`)}
-        <span class="arrow">›</span>
-      </div>` : null}
+    </div>`;
+}
+
+function CarouselDots({ count, active = 1 }) {
+  if (count <= 0) return null;
+  return html`
+    <div class="dots">
+      <span class="arrow">‹</span>
+      ${Array.from({ length: count }).map((_, i) => html`<span class="dot ${i === active ? 'active' : ''}"></span>`)}
+      <span class="arrow">›</span>
+    </div>`;
+}
+
+function ScreenContent({ json }) {
+  if (!json) return html`<div class="empty">No screen data.</div>`;
+  const data = json.data ?? json;
+  const userName = data?.userName ?? data?.user ?? data?.greeting ?? 'Mr JOHN SMITH';
+
+  // Section-based schema (page.schema.json)
+  if (Array.isArray(data?.sections) && data.sections.length) {
+    const { green, white } = partitionSections(data.sections);
+    const dotCount = green
+      .filter((s) => s.type === 'promo' || s.type === 'list')
+      .reduce((sum, s) => sum + (s.items?.length ?? 0), 0);
+
+    return html`
+      <${StatusBar} />
+      <${Header} userName=${userName} />
+      ${green.map((s) => html`<${GreenSection} section=${s} />`)}
+      <${CarouselDots} count=${Math.min(dotCount, 8)} active=${1} />
+      <div class="white-zone">
+        ${white.map((s) => html`<${WhiteSection} section=${s} />`)}
+      </div>`;
+  }
+
+  // Unknown shape — show the raw JSON so authors can inspect.
+  return html`
+    <${StatusBar} />
+    <${Header} userName=${userName} />
     <div class="white-zone">
-      ${featured ? html`
-        <div class="featured">
-          <div class="badge">R</div>
-          <div class="text">
-            <div class="lead">${featured.eyebrow ?? featured.kicker ?? 'Featured'}</div>
-            <div class="body">${featured.title ?? featured.text ?? featured.body ?? ''}</div>
-          </div>
-        </div>` : null}
-      ${widgets.length ? html`
-        <div class="section-title">My widgets</div>
-        <div class="widgets">
-          ${widgets.map((w) => html`
-            <div class="widget">
-              <div class="ico">${w.icon ?? '✦'}</div>
-              <div class="name">${w.name ?? w.label ?? w.title ?? ''}</div>
-            </div>`)}
-        </div>` : null}
-      ${extra.length ? html`
-        <div class="section-title">More</div>
-        ${extra.map(([k, v]) => html`
-          <div class="kv-card">
-            <div class="k">${k}</div>
-            <div class="v">${formatValue(v)}</div>
-          </div>`)}
-      ` : null}
-      ${empty ? html`<pre class="raw-json">${JSON.stringify(data, null, 2)}</pre>` : null}
+      <pre class="raw-json">${JSON.stringify(data, null, 2)}</pre>
     </div>`;
 }
 

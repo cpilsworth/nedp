@@ -11,23 +11,29 @@
   ],
   "properties": {
     "pageId": {
-      "type": "string"
+      "type": "string",
+      "title": "Page ID"
+
     },
     "title": {
-      "type": "string"
+      "type": "string",
+      "title": "Page Title"
     },
     "theme": {
       "type": "string",
+      "title": "Page Theme",
       "enum": [
         "light",
         "dark"
       ]
     },
     "version": {
-      "type": "number"
+      "type": "number",
+      "title": "Page Version"
     },
     "sections": {
       "type": "array",
+      "title": "Page Sections",
       "items": {
         "type": "object",
         "required": [
@@ -98,7 +104,8 @@
                   "title": "Item Icon"
                 },
                 "ctaLabel": {
-                  "type": "string"
+                  "type": "string",
+                  "title": "CTA Label"
                 },
                 "ctaAction": {
                   "type": "object",
@@ -118,7 +125,9 @@
                     },
                     
                     "value": {
-                      "type": "string"
+                      "type": "string",
+                      "title": "CTA Action Value"
+
                     }
                   },
                   "additionalProperties": false

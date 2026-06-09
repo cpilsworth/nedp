@@ -49,6 +49,11 @@
   <script type="module">
     import './components/mobile-app-preview.js';
 
+    // Tiny logger so every step of the page lifecycle shows up in the
+    // browser console with a consistent prefix. Filter on "[da-sc]" to
+    // isolate page-level events from library / network noise.
+    const log = (...args) => console.log('[da-sc]', ...args);
+
     const $ = (id) => document.getElementById(id);
     const envSel = $('env');
     const pathInput = $('path');
@@ -126,19 +131,32 @@
     function bindBundleErrors() {
       preview.bundle?.addEventListener('error', (e) => {
         const msg = e.detail?.error?.message ?? 'unknown';
+        log('bundle error', msg);
         setStatus('Error: ' + msg, 'err');
       });
     }
 
-    preview.addEventListener('bundle-change', syncFromComponent);
-    screenSel.addEventListener('change', () => preview.selectScreen(screenSel.value));
+    preview.addEventListener('bundle-change', (e) => {
+      log('bundle-change event', e.detail);
+      syncFromComponent();
+    });
+    screenSel.addEventListener('change', () => {
+      log('screen-select', screenSel.value);
+      preview.selectScreen(screenSel.value);
+    });
 
     function applyPath() {
       const p = pathInput.value.trim();
       // Keep env select in sync with whatever tier is in the path.
       const t = tierFromPath(p);
-      if (t && envSel.value !== t) envSel.value = t;
-      if (preview.getAttribute('path') !== p) preview.setAttribute('path', p);
+      if (t && envSel.value !== t) {
+        log('env auto-sync', { fromInput: t, was: envSel.value });
+        envSel.value = t;
+      }
+      if (preview.getAttribute('path') !== p) {
+        log('applyPath', { path: p, env: envSel.value });
+        preview.setAttribute('path', p);
+      }
       bindBundleErrors();
     }
 
@@ -148,6 +166,7 @@
     envSel.addEventListener('change', async () => {
       const oldPath = pathInput.value.trim();
       const newPath = pathWithTier(oldPath, envSel.value);
+      log('env change', { from: tierFromPath(oldPath), to: envSel.value, newPath });
       pathInput.value = newPath;
       preview.bundle?.clear();
       preview.setAttribute('path', newPath);
@@ -156,34 +175,47 @@
       setStatus(`Switched to ${envSel.value} — fetching…`);
       try {
         await preview.bundle.fetch();
+        log('env change · fetch ok', { env: envSel.value });
         setStatus(`Loaded from ${envSel.value}.`, 'ok');
-      } catch { /* error event */ }
+      } catch (err) {
+        log('env change · fetch failed', err?.message ?? err);
+      }
     });
 
     fetchBtn.addEventListener('click', async () => {
+      log('fetch button clicked');
       applyPath();
       setStatus('Fetching…');
       try {
         await preview.bundle.fetch();
+        log('fetch ok');
         setStatus('Loaded.', 'ok');
-      } catch { /* error event already handled */ }
+      } catch (err) {
+        log('fetch failed', err?.message ?? err);
+      }
     });
 
     updateBtn.addEventListener('click', async () => {
+      log('check-for-updates button clicked');
       applyPath();
       const bundle = preview.bundle;
       if (!bundle?.getMeta()) {
+        log('check-for-updates · no cache', { path: preview.getAttribute('path') });
         setStatus('No stored data — use Fetch first.', 'warn');
         return;
       }
       setStatus('Checking for updates…');
       try {
         const updated = await bundle.refresh();
+        log('check-for-updates · result', { updated });
         setStatus(updated ? 'Updated.' : 'No updates.', 'ok');
-      } catch { /* error event */ }
+      } catch (err) {
+        log('check-for-updates · failed', err?.message ?? err);
+      }
     });
 
     clearBtn.addEventListener('click', () => {
+      log('clear button clicked', { path: preview.getAttribute('path') });
       applyPath();
       preview.bundle?.clear();
       setStatus('Cleared.');
@@ -194,8 +226,31 @@
       if (e.key === 'Enter') { e.preventDefault(); fetchBtn.click(); }
     });
 
+    log('boot', { path: pathInput.value.trim(), env: envSel.value });
     applyPath();
     syncFromComponent();
+
+    // First load: the component already restores any cached bundle for this
+    // path via localStorage. If nothing is cached, kick off a remote fetch
+    // automatically so the page is never empty on a cold start.
+    const cachedMeta = preview.bundle?.getMeta();
+    if (cachedMeta) {
+      log('cache hit · using stored bundle', cachedMeta);
+    } else {
+      log('cache miss · auto-fetching from remote', {
+        path: preview.getAttribute('path'),
+        env: envSel.value,
+      });
+      setStatus('No cache — fetching…');
+      preview.bundle?.fetch()
+        .then(() => {
+          log('auto-fetch ok', preview.bundle?.getMeta());
+          setStatus(`Loaded from ${envSel.value}.`, 'ok');
+        })
+        .catch((err) => {
+          log('auto-fetch failed', err?.message ?? err);
+        });
+    }
   </script>
 </body>
 </html>

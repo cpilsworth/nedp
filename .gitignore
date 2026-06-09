@@ -10,6 +10,9 @@ helix-importer-ui
 *.bak
 .idea
 
+# Preview signing key — never commit the private key
+tools/preview-private.pem
+
 # Ensure these files are tracked
 !CLAUDE.md
 !AGENTS.md

@@ -31,6 +31,10 @@
 const STORAGE_PREFIX = 'manifest-bundle:';
 const FFLATE_URL = 'https://cdn.jsdelivr.net/npm/fflate@0.8.2/+esm';
 
+// Filter on "[bundle]" in the browser console to see storage/network steps.
+// eslint-disable-next-line no-console
+const log = (...args) => console.log('[bundle]', ...args);
+
 let fflatePromise = null;
 function loadFflate() {
   if (!fflatePromise) fflatePromise = import(FFLATE_URL);
@@ -108,8 +112,10 @@ export default class ManifestBundle extends EventTarget {
     super();
     this.#path = path;
     this.#stored = path ? readStored(path) : null;
+    log('new', { path, cached: !!this.#stored, lastModified: this.#stored?.lastModified ?? null });
     this.#onStorage = (e) => {
       if (!e.key || e.key === storageKey(this.#path)) {
+        log('storage event', { key: e.key, path: this.#path });
         this.#stored = readStored(this.#path);
         this.#emitChange('storage');
       }
@@ -143,27 +149,35 @@ export default class ManifestBundle extends EventTarget {
   /** Network fetch; unzips, stores, emits 'change'. Returns the new data. */
   async fetch() {
     if (!this.#path) throw new Error('ManifestBundle: path is not set');
-    const headers = this.#stored?.lastModified
-      ? { 'If-Modified-Since': this.#stored.lastModified }
-      : {};
+    const ims = this.#stored?.lastModified ?? null;
+    const headers = ims ? { 'If-Modified-Since': ims } : {};
+    log('fetch start', { path: this.#path, ifModifiedSince: ims });
     let resp;
     try {
       resp = await fetch(this.#path, { cache: 'no-store', headers });
     } catch (err) {
+      log('fetch transport error', err?.message ?? err);
       this.#emitError(err);
       throw err;
     }
-    if (resp.status === 304) return this.#stored;
+    if (resp.status === 304) {
+      log('fetch 304 (not modified)', { path: this.#path });
+      return this.#stored;
+    }
     if (!resp.ok) {
       const err = new Error(`Fetch failed: ${resp.status} ${resp.statusText}`);
+      log('fetch http error', { status: resp.status, statusText: resp.statusText });
       this.#emitError(err);
       throw err;
     }
     const lastModified = resp.headers.get('Last-Modified');
     const blob = await resp.blob();
+    log('fetch downloaded zip', { bytes: blob.size, lastModified });
     const files = await unzipBlob(blob);
+    log('fetch unzipped', { fileCount: Object.keys(files).length });
     const data = { lastModified, files, fetchedAt: new Date().toISOString() };
     writeStored(this.#path, data);
+    log('fetch stored to localStorage', { key: storageKey(this.#path) });
     this.#stored = data;
     this.#emitChange('fetch');
     return data;
@@ -172,7 +186,11 @@ export default class ManifestBundle extends EventTarget {
   /** HEAD request with If-Modified-Since. Returns true if updates available. */
   async checkForUpdates() {
     if (!this.#path) throw new Error('ManifestBundle: path is not set');
-    if (!this.#stored?.lastModified) return true;
+    if (!this.#stored?.lastModified) {
+      log('checkForUpdates · no cache (updates=true)', { path: this.#path });
+      return true;
+    }
+    log('checkForUpdates HEAD', { path: this.#path, ifModifiedSince: this.#stored.lastModified });
     let resp;
     try {
       resp = await fetch(this.#path, {
@@ -181,16 +199,24 @@ export default class ManifestBundle extends EventTarget {
         cache: 'no-store',
       });
     } catch (err) {
+      log('checkForUpdates transport error', err?.message ?? err);
       this.#emitError(err);
       throw err;
     }
-    if (resp.status === 304) return false;
-    if (resp.status === 200) return true;
+    if (resp.status === 304) {
+      log('checkForUpdates · 304 (no updates)', { path: this.#path });
+      return false;
+    }
+    if (resp.status === 200) {
+      log('checkForUpdates · 200 (updates available)', { path: this.#path });
+      return true;
+    }
     throw new Error(`Unexpected status: ${resp.status}`);
   }
 
   /** checkForUpdates → fetch if stale. Returns true if anything was updated. */
   async refresh() {
+    log('refresh', { path: this.#path, hasCache: !!this.#stored });
     if (!this.#stored) {
       await this.fetch();
       return true;
@@ -202,6 +228,7 @@ export default class ManifestBundle extends EventTarget {
 
   clear() {
     if (!this.#path) return;
+    log('clear', { path: this.#path });
     removeStored(this.#path);
     this.#stored = null;
     this.#emitChange('clear');
